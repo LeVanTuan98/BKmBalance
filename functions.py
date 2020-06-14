@@ -2,8 +2,10 @@ import numpy as np
 import cv2
 import imutils
 # Kich thuoc thuc cua khung giay [Dai x Rong]
-real_size = [13.9, 8.9]
-# So duong ke thuc te nam doc (numVer) va nam ngang (honVer)
+# real_size = [13.9, 8.9]
+real_size = [1, 2.5]
+# So duong ke thuc te nam
+# doc (numVer) va nam ngang (honVer)
 numVer = 11
 honVer = 3
 
@@ -168,6 +170,8 @@ def FindCenter(image):
     cY = int(M["m01"] / M["m00"])
 
     return cX, cY
+
+
 def RealCoordinatesOfLaserPointer(image, x, y, verCoor, honCoor):
     # Input: x, y: Toa do cua diem laser
     #        verCoor: Toa do cua cac truc doc
@@ -176,11 +180,11 @@ def RealCoordinatesOfLaserPointer(image, x, y, verCoor, honCoor):
     # Output: [x_real, y_real]: Toa do thuc te cua diem laser
 
     img = image.copy()
-    size_y = np.size(img, 0)
-    size_x = np.size(img, 1)
+    # size_y = np.size(img, 0)
+    # size_x = np.size(img, 1)
 
-    scale_x = real_size[0]/size_x
-    scale_y = real_size[1]/size_y
+    delta_x = np.diff(verCoor)
+    delta_y = np.diff(honCoor)
 
     font = cv2.FONT_HERSHEY_COMPLEX
     # Duyet theo hang ngang
@@ -189,6 +193,7 @@ def RealCoordinatesOfLaserPointer(image, x, y, verCoor, honCoor):
     for i in range(len(delta) - 1):
         if np.sign(delta[i]) != np.sign(delta[i + 1]):
             # Tinh khoang cach den i
+            scale_x = real_size[0]/(delta_x[i])
             x_real = round((x - verCoor[i])*scale_x + i, 2)
             cv2.line(img, (x, y), (verCoor[0], y), (0, 0, 255), 1)
             cv2.putText(img, str(x_real) + 'cm', (verCoor[0], y - 30), font, 1, (0, 255, 255))
@@ -197,6 +202,10 @@ def RealCoordinatesOfLaserPointer(image, x, y, verCoor, honCoor):
                 x_real = i
             break
     ### Duyet theo hang doc
+    if honCoor[1] - y >= 0:
+        scale_y = real_size[1]/delta_y[0]
+    else:
+        scale_y = real_size[1] / delta_y[1]
     y_real = round((honCoor[1] - y)*scale_y, 2)
     cv2.line(img, (x, y), (x, honCoor[1]), (0, 0, 255), 1)
     cv2.putText(img, str(y_real) + 'cm', (x + 30, honCoor[1]), font, 1, (0, 255, 255))
