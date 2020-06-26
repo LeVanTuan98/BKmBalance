@@ -7,14 +7,14 @@ real_size = [1, 2.5]
 # So duong ke thuc te nam
 # doc (numVer) va nam ngang (honVer)
 numVer = 11
-honVer = 3
+honVer = 2
 
 # Khoang mau de loc Frame : DetectFrame
 blackLower = (0, 0, 0)
 blackUpper = (180, 120, 120)
 
 # Khoang mau de loc laser pointer: FindCenter
-whiteLower = (0, 0, 245)
+whiteLower = (0, 100, 245)
 whiteUpper = (255, 255, 255)
 ### Hàm tách Frame
 def order_points(pts):
@@ -141,38 +141,66 @@ def DetectFrame(frame, i):
         print("Error in Frame: ", i)
 
     return warped
+### Ham tim Top - Right - Bottom - Left
+def FindTRBL(values):
+    # Input: Ma tran can tim T - R - B - L
+    # Output: Gia tri cua Tmost - Rmost - Bmost - Lmost
+    leftmost = 0
+    rightmost = 0
+    topmost = 0
+    bottommost = 0
+    temp = 0
+    for i in range(np.size(values, 1)):
+        col = values[:, i]
+        if np.sum(col) != 0.0:
+            rightmost = i
+            if temp == 0:
+                leftmost = i
+                temp = 1
+    for j in range(np.size(values, 0)):
+        row = values[j, :]
+        if np.sum(row) != 0.0:
+            bottommost = j
+            if temp == 1:
+                topmost = j
+                temp = 2
+    return [topmost, bottommost, leftmost, rightmost]
 ### Ham xac dinh toa do trung tam cua laser Pointer
-def FindCenter(image):
-    # Input: Anh dau vao da tach khung
-    # Output: Toa do (x, y) cua laser pointer
-    img = image.copy()
+# def FindCenter(image):
+#     # Input: Anh dau vao da tach khung
+#     # Output: Toa do (x, y) cua laser pointer
+#     img = image.copy()
+#
+#     # whiteLower = (0, 0, 245)
+#     # whiteUpper = (255, 255, 255)
+#
+#     blurredWar = cv2.GaussianBlur(img, (5, 5), 0)
+#     hsvWar = cv2.cvtColor(blurredWar, cv2.COLOR_BGR2HSV)
+#
+#     maskWar = cv2.inRange(hsvWar, whiteLower, whiteUpper)
+#     cv2.imshow("hsvWar1", maskWar)
+#     maskWar = cv2.dilate(maskWar, None, iterations=2)  # Đang là ảnh Gray với 2 mức xám 0 và 255
+#     maskWar = cv2.erode(maskWar, None, iterations=2)
+#
+#     cv2.imshow("hsvWar2", maskWar)
+#     # convert the grayscale image to binary image
+#     ret, thresh = cv2.threshold(maskWar, 127, 255, 0)
+#     cv2.imshow("hsvWar3", thresh)
+#     # calculate moments of binary image
+#     # M = cv2.moments(thresh)
+#     #
+#     # # calculate x,y coordinate of center
+#     # cX = int(M["m10"] / M["m00"])
+#     # cY = int(M["m01"] / M["m00"])
+#     # Focusing on [top right bottom left] of red region
+#     [top, bottom, left, right] = FindTRBL(thresh)
+#     cX = int((right + left)/2)
+#     cY = int((top + bottom)/2)
+#
+#     return cX, cY
 
-    # whiteLower = (0, 0, 245)
-    # whiteUpper = (255, 255, 255)
 
-    blurredWar = cv2.GaussianBlur(img, (5, 5), 0)
-    hsvWar = cv2.cvtColor(blurredWar, cv2.COLOR_BGR2HSV)
-
-    maskWar = cv2.inRange(hsvWar, whiteLower, whiteUpper)
-    # cv2.imshow("hsvWar1", maskWar)
-    maskWar = cv2.dilate(maskWar, None, iterations=2)  # Đang là ảnh Gray với 2 mức xám 0 và 255
-    maskWar = cv2.erode(maskWar, None, iterations=2)
-
-    # cv2.imshow("hsvWar2", maskWar)
-    # convert the grayscale image to binary image
-    ret, thresh = cv2.threshold(maskWar, 127, 255, 0)
-    # cv2.imshow("hsvWar3", thresh)
-    # calculate moments of binary image
-    M = cv2.moments(thresh)
-
-    # calculate x,y coordinate of center
-    cX = int(M["m10"] / M["m00"])
-    cY = int(M["m01"] / M["m00"])
-
-    return cX, cY
-
-
-def RealCoordinatesOfLaserPointer(image, x, y, verCoor, honCoor):
+def RealCoordinatesOfLaserPointer(image, x, y, verCoor):
     # Input: x, y: Toa do cua diem laser
     #        verCoor: Toa do cua cac truc doc
     #        honCoor: Toa do cua ca truc ngang
@@ -184,7 +212,7 @@ def RealCoordinatesOfLaserPointer(image, x, y, verCoor, honCoor):
     # size_x = np.size(img, 1)
 
     delta_x = np.diff(verCoor)
-    delta_y = np.diff(honCoor)
+    # delta_y = np.diff(honCoor)
 
     font = cv2.FONT_HERSHEY_COMPLEX
     # Duyet theo hang ngang
@@ -202,16 +230,16 @@ def RealCoordinatesOfLaserPointer(image, x, y, verCoor, honCoor):
                 x_real = i
             break
     ### Duyet theo hang doc
-    if honCoor[1] - y >= 0:
-        scale_y = real_size[1]/delta_y[0]
-    else:
-        scale_y = real_size[1] / delta_y[1]
-    y_real = round((honCoor[1] - y)*scale_y, 2)
-    cv2.line(img, (x, y), (x, honCoor[1]), (0, 0, 255), 1)
-    cv2.putText(img, str(y_real) + 'cm', (x + 30, honCoor[1]), font, 1, (0, 255, 255))
+    # if honCoor[1] - y >= 0:
+    #     scale_y = real_size[1]/delta_y[0]
+    # else:
+    #     scale_y = real_size[1] / delta_y[1]
+    # y_real = round((honCoor[1] - y)*scale_y, 2)
+    # cv2.line(img, (x, y), (x, honCoor[1]), (0, 0, 255), 1)
+    # cv2.putText(img, str(y_real) + 'cm', (x + 30, honCoor[1]), font, 1, (0, 255, 255))
     # Display Image was calculated the coordinates
-    # cv2.imshow("Calculated Image", img)
-    return x_real, y_real, img
+    cv2.imshow("Calculated Image", img)
+    return x_real, img
 ### Ham Tim Toa Do cua cac duong luoi
 def GridCoordinates(image):
     # Input: Anh sau khi da tach khung
@@ -243,27 +271,26 @@ def GridCoordinates(image):
         if cv2.countNonZero(thres) == 0:
             break
     # Displaying the final skeleton
-    # cv2.imshow("Skeleton Image", skel)
-    # [x, y] = FindCenterLaserPointer(image)
-    [x, y] = FindCenter(image)
-    numVerDir = int(np.size(skel, 0)*3/4)
+    cv2.imshow("Skeleton Image", skel)
+    # Find Coordinates of grid from bottom to top
+    numVerDir = np.size(skel, 0) - 1
     verDir = skel[numVerDir, :]
     verCoor = DetermineCoordinate(verDir)
     while (True):
         if len(verCoor) > 0:
-            if verCoor[0] <= 30:
+            if verCoor[0] <= 1:
                 verCoor.pop(0)
         if len(verCoor) != numVer:
-            numVerDir -= 5
-            if numVerDir < 50:
+            numVerDir -= 1
+            if numVerDir < 1:
                 print(" Khong the tim dung duoc")
                 break
             verDir = skel[numVerDir, :]
             verCoor = DetermineCoordinate(verDir)
         else:
             if min(abs(np.diff(verCoor))) < 20:
-                numVerDir -= 5
-                if numVerDir < 50:
+                numVerDir -= 1
+                if numVerDir < 1:
                     print(" Khong the tim dung duoc")
                     break
                 verDir = skel[numVerDir, :]
@@ -271,35 +298,76 @@ def GridCoordinates(image):
             else:
                 break
     print(" So duong doc: ", len(verCoor))
-
+    print(verCoor)
     for i in range(len(verCoor)):
         cv2.circle(img, (verCoor[i], numVerDir), 1, (0, 0, 255), 1, cv2.LINE_AA)
 
-    numHonDir = int((verCoor[0] + verCoor[1]) / 2)
-    honDir = skel[:, numHonDir]
-
-    honCoor = DetermineCoordinate(honDir)
-    i = 1
+    verCoorBottom = verCoor;
+    # Find Coordinates of grid from top to bottom
+    numVerDir = 0
+    verDir = skel[numVerDir, :]
+    verCoor = DetermineCoordinate(verDir)
     while (True):
-        if len(honCoor) != honVer:
-            numHonDir = int((verCoor[i] + verCoor[i + 1]) / 2)
-            honDir = skel[:, numHonDir]
-            honCoor = DetermineCoordinate(honDir)
-            i += 1
-            if i > len(verCoor):
-                print("khong the tim dung dươc")
+        if len(verCoor) > 0:
+            if verCoor[0] <= 1:
+                verCoor.pop(0)
+        if len(verCoor) != numVer:
+            numVerDir += 1
+            if numVerDir >= np.size(skel, 0):
+                print(" Khong the tim dung duoc")
                 break
+            verDir = skel[numVerDir, :]
+            verCoor = DetermineCoordinate(verDir)
         else:
+            if min(abs(np.diff(verCoor))) < 20:
+                numVerDir += 1
+                if numVerDir >= np.size(skel, 0):
+                    print(" Khong the tim dung duoc")
+                    break
+                verDir = skel[numVerDir, :]
+                verCoor = DetermineCoordinate(verDir)
+            else:
+                break
+    print(" So duong doc: ", len(verCoor))
+    print(verCoor)
+    for i in range(len(verCoor)):
+        cv2.circle(img, (verCoor[i], numVerDir), 1, (0, 0, 255), 1, cv2.LINE_AA)
+
+    verCoorTop = verCoor
+
+    # numHonDir = int((verCoor[0] + verCoor[1]) / 2)
+    # honDir = skel[:, numHonDir]
+    #
+    # honCoor = DetermineCoordinate(honDir)
+    # i = 1
+    # while (True):
+    #     if len(honCoor) != honVer:
+    #         numHonDir = int((verCoor[i] + verCoor[i + 1]) / 2)
+    #         honDir = skel[:, numHonDir]
+    #         honCoor = DetermineCoordinate(honDir)
+    #         i += 1
+    #         if i > len(verCoor):
+    #             print("khong the tim dung dươc")
+    #             break
+    #     else:
+    #         break
+    #
+    #
+    # print(" So duong ngang: ", len(honCoor))
+    # for i in range(len(honCoor)):
+    #     cv2.circle(img, (numHonDir, honCoor[i]), 1, (0, 0, 255), 1, cv2.LINE_AA)
+
+    for i in range(numVer):
+        cv2.line(img, (verCoorTop[i], 0), (verCoorBottom[i], np.size(skel, 0)), (0, 0, 255), 1)
+
+    for i in range(numVer):
+        delta = abs(verCoorTop[i] - verCoorBottom[i])
+        if delta > 10:
+            print("Hinh bi cheo")
             break
-
-
-    print(" So duong ngang: ", len(honCoor))
-    for i in range(len(honCoor)):
-        cv2.circle(img, (numHonDir, honCoor[i]), 1, (0, 0, 255), 1, cv2.LINE_AA)
-
     #Displaying the image with central points
     # cv2.imshow("Detected Coordinate", img)
-    return verCoor, honCoor
+    return verCoor
 ### Ham xac dinh toa do cua luoi
 def DetermineCoordinate(dirValue):
     # Input: Vecto cua anh Skel theo mot huong nao do
@@ -319,3 +387,53 @@ def DetermineCoordinate(dirValue):
         else:
             i += 1
     return coorValue
+
+## Ham xac dinh toa do trung tam cua laser Pointer
+def FindCenter(image):
+    # Input: Anh dau vao da tach khung
+    # Output: Toa do (x, y) cua laser pointer
+    img = image.copy()
+
+    # whiteLower = (0, 0, 245)
+    # whiteUpper = (255, 255, 255)
+
+    blurredWar = cv2.GaussianBlur(img, (5, 5), 0)
+    hsvWar = cv2.cvtColor(blurredWar, cv2.COLOR_BGR2HSV)
+
+    maskWar = cv2.inRange(hsvWar, whiteLower, whiteUpper)
+    # cv2.imshow("hsvWar1", maskWar)
+    maskWar = cv2.dilate(maskWar, None, iterations=2)  # Đang là ảnh Gray với 2 mức xám 0 và 255
+    maskWar = cv2.erode(maskWar, None, iterations=2)
+
+    # cv2.imshow("hsvWar2", maskWar)
+    # convert the grayscale image to binary image
+    ret, thresh = cv2.threshold(maskWar, 127, 255, 0)
+    # cv2.imshow("hsvWar3", thresh)
+    # calculate moments of binary image
+    # M = cv2.moments(thresh)
+    #
+    # # calculate x,y coordinate of center
+    # cX = int(M["m10"] / M["m00"])
+    # cY = int(M["m01"] / M["m00"])
+    # Focusing on [top right bottom left] of red region
+    [top, bottom, left, right] = FindTRBL(thresh)
+    x = int((right + left) / 2)
+    y = int((top + bottom) / 2)
+
+    # Improve the algorithm finding the centre laser
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # color -> gray
+    delta = 20
+    gray = gray[y - delta: y + delta, x - delta: x + delta]
+    canny = cv2.Canny(gray, 50, 150, apertureSize=3)
+    # dilate = cv2.dilate(canny, None, iterations=3)
+    # erode = cv2.erode(dilate, None, iterations=4)
+    cv2.imshow("Canny", canny)
+    # cv2.imshow("dilate", dilate)
+    # cv2.imshow("erode", erode)
+
+    # Focusing on [top right bottom left] of red region
+    [top, bottom, left, right] = FindTRBL(canny)
+    cX = x + int((right + left)/2) - delta
+    cY = y + int((top + bottom)/2) - delta
+
+    return cX, cY

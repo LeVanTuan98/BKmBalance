@@ -8,8 +8,10 @@ cap = cv2.VideoCapture("videos/video-nghieng.mp4")
 # fourcc = cv2.VideoWriter_fourcc(*'XVID')
 # outVideo = cv2.VideoWriter('output.avi', fourcc, 5, (1280, 720))
 
-new_width = 1096
-new_height = 800
+# new_width = 1096
+# new_height = 800
+new_width = 1112
+new_height = 712
 i = 0
 
 realCoor = []
