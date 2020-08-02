@@ -14,6 +14,12 @@ new_width = 1112
 new_height = 712
 i = 0
 
+blueLower = (90, 150, 0)
+blueUpper = (120, 255, 255)
+
+yellowLower = (20, 60, 60)
+yellowUpper = (120, 255, 255)
+
 realCoor = []
 
 while True:

@@ -6,7 +6,7 @@ import imutils
 real_size = [1, 2.5]
 # So duong ke thuc te nam
 # doc (numVer) va nam ngang (honVer)
-numVer = 11
+numVer = 10
 honVer = 2
 
 # Khoang mau de loc Frame : DetectFrame
@@ -68,79 +68,7 @@ def four_point_transform(image, pts):
     warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
     # return the warped image
     return warped
-def DetectFrame(frame, i):
-    # blackLower = (0, 0, 0)
-    # blackUpper = (180, 120, 120)
 
-
-    ratio = frame.shape[0] / 500.0  # Chiều cao ảnh chuẩn hóa(chia cho 500)
-    orig = frame.copy()
-    frame = imutils.resize(frame, height=500)
-
-    # convert the image to grayscale, blur it, and find edges
-    # in the image
-    blurred = cv2.GaussianBlur(frame, (5, 5), 0)
-    hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
-
-    gray = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
-    # edged = cv2.Canny(gray, 75, 200)
-
-    mask = cv2.inRange(hsv, blackLower, blackUpper)
-
-    mask = cv2.erode(mask, None, iterations=2)
-    mask = cv2.dilate(mask, None, iterations=2)
-    # show the original image and the edge detected image
-    # print("STEP 1: Edge Detection")
-    # cv2.imshow("Image", frame)
-    # cv2.imshow("Edged", edged)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-
-    # Step 2: Finding Contours
-    # find the contours in the edged image, keeping only the
-    # largest ones, and initialize the screen contour
-    cnts = cv2.findContours(mask.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    cnts = imutils.grab_contours(cnts)
-    cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:]
-    # loop over the contours
-    for c in cnts:
-        # approximate the contour
-        peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-        # if our approximated contour has four points, then we
-        # can assume that we have found our screen
-        if len(approx) == 4:
-            screenCnt = approx
-            break
-
-    if len(approx) != 4:
-        print("No Find the Paper: ", i)
-
-    # show the contour (outline) of the piece of paper
-    # print("STEP 2: Find contours of paper")
-    # cv2.drawContours(image, [screenCnt], -1, (0, 255, 0), 2)
-    # cv2.imshow("Outline", frame)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-
-    # Step 3: Apply a Perspective Transform & Threshold
-    # apply the four point transform to obtain a top-down
-    # view of the original image
-    try:
-        warped = four_point_transform(orig, screenCnt.reshape(4, 2) * ratio)
-        # convert the warped image to grayscale, then threshold it
-        # to give it that 'black and white' paper effect
-        # warped = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
-        # T = threshold_local(warped, 11, offset=10, method="gaussian")
-        # warped = (warped > T).astype("uint8") * 255
-        # show the original and scanned images
-        # fileNameImage = 'outImage%s.jpg' % (i)
-        # print(fileNameImage)
-        # cv2.imwrite(fileNameImage, warped)
-    except:
-        print("Error in Frame: ", i)
-
-    return warped
 ### Ham tim Top - Right - Bottom - Left
 def FindTRBL(values):
     # Input: Ma tran can tim T - R - B - L
@@ -224,7 +152,7 @@ def RealCoordinatesOfLaserPointer(image, x, y, verCoor):
             scale_x = real_size[0]/(delta_x[i])
             x_real = round((x - verCoor[i])*scale_x + i, 2)
             cv2.line(img, (x, y), (verCoor[0], y), (0, 0, 255), 1)
-            cv2.putText(img, str(x_real) + 'cm', (verCoor[0], y - 30), font, 1, (0, 255, 255))
+            cv2.putText(img, str(x_real) + 'cm', (verCoor[0], y - 30), font, 1, (255, 0, 0))
         if abs(delta[i]) == minValue:
             if minValue == 0:
                 x_real = i
@@ -248,7 +176,7 @@ def GridCoordinates(image):
     img = image.copy()
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # Threshold the image
-    ret, thres = cv2.threshold(gray, 127, 255, 0)
+    ret, thres = cv2.threshold(gray, 20, 255, 0)
 
     # Step 1: Create an empty skeleton
     size = np.size(thres)
@@ -272,6 +200,7 @@ def GridCoordinates(image):
             break
     # Displaying the final skeleton
     cv2.imshow("Skeleton Image", skel)
+    return 0
     # Find Coordinates of grid from bottom to top
     numVerDir = np.size(skel, 0) - 1
     verDir = skel[numVerDir, :]
@@ -420,20 +349,74 @@ def FindCenter(image):
     x = int((right + left) / 2)
     y = int((top + bottom) / 2)
 
-    # Improve the algorithm finding the centre laser
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # color -> gray
-    delta = 20
-    gray = gray[y - delta: y + delta, x - delta: x + delta]
-    canny = cv2.Canny(gray, 50, 150, apertureSize=3)
-    # dilate = cv2.dilate(canny, None, iterations=3)
-    # erode = cv2.erode(dilate, None, iterations=4)
-    cv2.imshow("Canny", canny)
-    # cv2.imshow("dilate", dilate)
-    # cv2.imshow("erode", erode)
+    # # Improve the algorithm finding the centre laser
+    # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # color -> gray
+    # delta = 20
+    # gray = gray[y - delta: y + delta, x - delta: x + delta]
+    # canny = cv2.Canny(gray, 50, 150, apertureSize=3)
+    # # dilate = cv2.dilate(canny, None, iterations=3)
+    # # erode = cv2.erode(dilate, None, iterations=4)
+    # cv2.imshow("Canny", canny)
+    # # cv2.imshow("dilate", dilate)
+    # # cv2.imshow("erode", erode)
+    #
+    # # Focusing on [top right bottom left] of red region
+    # [top, bottom, left, right] = FindTRBL(canny)
+    # cX = x + int((right + left)/2) - delta
+    # cY = y + int((top + bottom)/2) - delta
 
-    # Focusing on [top right bottom left] of red region
-    [top, bottom, left, right] = FindTRBL(canny)
-    cX = x + int((right + left)/2) - delta
-    cY = y + int((top + bottom)/2) - delta
+    return x, y
+def Detect_ROI(frame, i, lower, upper):
+    # resize image
+    orig = frame.copy()
+    image = frame.copy()
+    # ratio = image.shape[0] / 500.0  # Chiều cao ảnh chuẩn hóa (chia cho 500)
+    # image = imutils.resize(image, height=500)
 
-    return cX, cY
+    # STEP1: Detect color
+    # convert the image to grayscale, blur it, and find edges
+    # in the image
+    blurred = cv2.GaussianBlur(image, (5, 5), 0)
+    hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, lower, upper)
+    mask = cv2.erode(mask, None, iterations=2)
+    mask = cv2.dilate(mask, None, iterations=2)
+
+    # Step 2: Finding Contours
+    # find the contours in the edged image, keeping only the
+    # largest ones, and initialize the screen contour
+    cnts = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+    cnts = imutils.grab_contours(cnts)
+    cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:4]
+
+    # loop over the contours
+    i = 0
+    for roi in cnts:
+        peri = cv2.arcLength(roi, True)
+        approx = cv2.approxPolyDP(roi, 0.02 * peri, True)
+
+        mask = np.zeros_like(orig)
+        cv2.drawContours(mask, [approx], 0, (255, 255, 255), -1)  # Draw filled contour in mask
+        warped = np.zeros_like(orig)  # Extract out the object and place into output image
+        warped[mask == 255] = orig[mask == 255]
+
+        warped = cv2.medianBlur(warped, 5)
+        grayImage = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
+
+        valueThreshold, binaryImage = cv2.threshold(grayImage, 125, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+        cntsWhite = cv2.findContours(binaryImage, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        cntsWhite = imutils.grab_contours(cntsWhite)
+        cntsWhite = sorted(cntsWhite, key=cv2.contourArea, reverse=True)[:4]
+        # loop over the contours
+        for roiWhite in cntsWhite:
+            # approximate the contour
+            peri = cv2.arcLength(roiWhite, True)
+            approx = cv2.approxPolyDP(roiWhite, 0.02 * peri, True)
+            # if our approximated contour has four points, then we
+            # can assume that we have found our screen
+            if len(approx) == 4:
+                screenCntWhite = approx
+                break
+
+    return four_point_transform(orig, screenCntWhite.reshape(4, 2))
