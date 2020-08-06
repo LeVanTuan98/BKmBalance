@@ -66,7 +66,7 @@ def four_point_transform(image, pts):
     # return the warped image
     return warped, minX, maxX, minY, maxY
 
-def detect_white_frame_laser_poiter(original_image):
+def detect_white_frame(original_image):
     image = original_image.copy()
 
     whiteLower = (0, 0, 245)
@@ -91,6 +91,7 @@ def detect_white_frame_laser_poiter(original_image):
 ## STEP 1: Color Detection - BLUE
     # cv2.imshow("Image", image)
     # cv2.imshow("Color", maskBlue)
+    cv2.imwrite('color2.jpg', maskBlue)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
 
@@ -121,6 +122,8 @@ def detect_white_frame_laser_poiter(original_image):
         maskWar = cv2.erode(maskWar, None, iterations=2)
         maskWar = cv2.dilate(maskWar, None, iterations=2)  # Đang là ảnh Gray với 2 mức xám 0 và 255
 
+        # cv2.imshow("mask", maskWar)
+
         # calculate moments of binary image
         M = cv2.moments(maskWar)
 
@@ -130,7 +133,9 @@ def detect_white_frame_laser_poiter(original_image):
 
         warpedBlue = cv2.medianBlur(origBlue, 5)
         grayImage = cv2.cvtColor(warpedBlue, cv2.COLOR_BGR2GRAY)
-        valueThreshold, binaryImage = cv2.threshold(grayImage, 125, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+        # valueThreshold, binaryImage = cv2.threshold(grayImage, 125, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        valueThreshold, binaryImage = cv2.threshold(grayImage, 125, 255, cv2.ADAPTIVE_THRESH_MEAN_C)
 
         cntsWhite = cv2.findContours(binaryImage.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         cntsWhite = imutils.grab_contours(cntsWhite)
@@ -150,6 +155,7 @@ def detect_white_frame_laser_poiter(original_image):
                     screenCntWhite = approx
                     x = int(cXTemp - minX)
                     y = int(cYTemp - minY)
+
                     break
                 else:
                     continue
@@ -162,9 +168,28 @@ def detect_white_frame_laser_poiter(original_image):
     else:
         warpedWhite, _, _, _, _ = four_point_transform(original_image, screenCntWhite.reshape(4, 2))
 
-## STEP 2: Find centre of laser poiter (x, y)
+    return warpedWhite
+
+def find_center_point(warped_image):
+    ## Find centre of laser poiter (x, y)
+    frame = warped_image.copy()
+    whiteLower = (0, 0, 245)
+    whiteUpper = (255, 150, 255)
+    hsvWar = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    maskWar = cv2.inRange(hsvWar, whiteLower, whiteUpper)
+
+    maskWar = cv2.erode(maskWar, None, iterations=2)
+    maskWar = cv2.dilate(maskWar, None, iterations=2)  # Đang là ảnh Gray với 2 mức xám 0 và 255
+
+    # calculate moments of binary image
+    M = cv2.moments(maskWar)
+
+    # calculate x,y coordinate of center
+    x = int(M["m10"] / M["m00"])
+    y = int(M["m01"] / M["m00"])
+
     # Improve the algorithm finding the centre laser
-    frame = warpedWhite
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # color -> gray
     blurred = cv2.GaussianBlur(gray, (3, 3), 0)
     thresh = cv2.threshold(blurred, 240, 255, cv2.THRESH_BINARY_INV)[1]
@@ -176,8 +201,7 @@ def detect_white_frame_laser_poiter(original_image):
     [top, bottom, left, right] = FindTRBL(mask_laser)
     cX = x + int((right + left) / 2) - delta
     cY = y + int((top + bottom) / 2) - delta
-    return warpedWhite, cX, cY
-
+    return cX, cY
 ### Ham tim Top - Right - Bottom - Left
 def FindTRBL(values):
     # Input: Ma tran can tim T - R - B - L
@@ -208,7 +232,7 @@ def detect_grid_coodinate(warped_image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # threshold
     th, threshed = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
-    cv2.imshow("thresh", threshed)
+    # cv2.imshow("thresh", threshed)
     # findcontours
     cnts = cv2.findContours(threshed, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[-2]
     # filter by area
