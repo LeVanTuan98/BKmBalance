@@ -72,7 +72,7 @@ def detect_white_frame(original_image):
     whiteLower = (0, 0, 245)
     whiteUpper = (255, 150, 255)
 
-    blueLower = (100, 100, 100)
+    blueLower = (100, 50, 50)
     blueUpper = (120, 255, 255)
 
     screenCntWhite = 0
@@ -91,7 +91,6 @@ def detect_white_frame(original_image):
 ## STEP 1: Color Detection - BLUE
     # cv2.imshow("Image", image)
     # cv2.imshow("Color", maskBlue)
-    cv2.imwrite('color2.jpg', maskBlue)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
 
@@ -229,6 +228,7 @@ def FindTRBL(values):
 
 def detect_grid_coodinate(warped_image):
     image = warped_image.copy()
+    size_image = np.shape(image)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # threshold
     th, threshed = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
@@ -237,7 +237,7 @@ def detect_grid_coodinate(warped_image):
     cnts = cv2.findContours(threshed, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[-2]
     # filter by area
     number_dot_per_line = 10
-    S_min = 3
+    S_min = 30
     S_max = 300
     xcnts = []
     coor_x = []
@@ -245,19 +245,22 @@ def detect_grid_coodinate(warped_image):
 # Tim tam cua cac nut luoi dua vao dieu kien dien tich [S_min, S_max]
     for cnt in cnts:
         if S_min < cv2.contourArea(cnt) < S_max:
-            xcnts.append(cnt)
             # calculate moments of binary image
             M = cv2.moments(cnt)
 
             # calculate x,y coordinate of center
             grid_x = int(M["m10"] / M["m00"])
             grid_y = int(M["m01"] / M["m00"])
-            coor_x.append(grid_x)
-            coor_y.append(grid_y)
-            cv2.circle(image, (grid_x, grid_y), 2, (255, 0, 0), 2, cv2.LINE_AA)
+            # remove the spot which locate in the image 's edge
+            if (20 < grid_x < size_image[1] - 20) & (20 < grid_y < size_image[0] - 20):
+                xcnts.append(cnt)
+                coor_x.append(grid_x)
+                coor_y.append(grid_y)
+                cv2.circle(image, (grid_x, grid_y), 2, (255, 0, 0), 2, cv2.LINE_AA)
 
+    # cv2.imshow("grid_image", image)
     if len(xcnts) != number_dot_per_line * 2:
-        print('Khong tim thay dung so diem nut!!!')
+        print('[ERROR] Co %d diem nut!!!' % (len(xcnts)) )
     # cv2.circle(image, (cX, cY), 5, (0, 0, 255), 1, cv2.LINE_AA)
 
     line1 = [] # toa do cua cac diem hang tren
@@ -287,9 +290,9 @@ def detect_grid_coodinate(warped_image):
         else:
             line2.append([xtb, y1])
             line1.append([xtb, y2])
-    print(line1)
-    print(line2)
-    print(ver_coor)
+    # print(line1)
+    # print(line2)
+    # print(ver_coor)
     ver_coor.sort()
     return line1, line2, ver_coor
 def calculate_real_coordinate_of_laser_pointer(cX, cY, ver_coor):
@@ -307,15 +310,19 @@ def calculate_real_coordinate_of_laser_pointer(cX, cY, ver_coor):
 
 # Tinh khoang cach tu tam den duong dau tien ben trai
 # Neu tam nam giua 2 cot => tinh ty le khoang cach tu tam den cot ben trai gan nhat + so cot o giua
-    delta = ver_coor - np.ones(np.size(ver_coor))*cX
-    minValue = min(abs(delta))
-    for i in range(len(delta) - 1):
-        if np.sign(delta[i]) != np.sign(delta[i + 1]):
-            # Tinh khoang cach den i - cot ben trai gan nhat
-            scale_x = real_size[0]/(delta_x[i])
-            x_real = round((cX - ver_coor[i])*scale_x + i, 2)
-        if abs(delta[i]) == minValue:
-            if minValue == 0:
-                x_real = i
-            break
+    if (cX < min(ver_coor)):
+        print("Vuot ra khoi luoi")
+        x_real = 0
+    else:
+        delta = ver_coor - np.ones(np.size(ver_coor))*cX
+        minValue = min(abs(delta))
+        for i in range(len(delta) - 1):
+            if np.sign(delta[i]) != np.sign(delta[i + 1]):
+                # Tinh khoang cach den i - cot ben trai gan nhat
+                scale_x = real_size[0]/(delta_x[i])
+                x_real = round((cX - ver_coor[i])*scale_x + i, 2)
+            if abs(delta[i]) == minValue:
+                if minValue == 0:
+                    x_real = i
+                break
     return x_real

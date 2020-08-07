@@ -2,7 +2,7 @@ from BW_functions import *
 import matplotlib as plt
 import xlsxwriter
 # Doc file video (khoảng 60 khung/s)
-cap = cv2.VideoCapture("videos/video6-8_2.mp4")
+cap = cv2.VideoCapture("Input_Videos/video7-8_1.mp4")
 
 # Khai bao tao Video
 # fourcc = cv2.VideoWriter_fourcc(*'XVID')
@@ -25,7 +25,7 @@ while True:
 
     # STEP 1: Detect ROI
     image = cv2.resize(src=frame, dsize=(new_width, new_height))
-    fileNameImage = 'images/video6-8/outImage%s.jpg' % (i)
+    fileNameImage = 'Input_Images/video7-8/video7-8_1/frame' + str(i) + '.jpg'
     print(fileNameImage)
     cv2.imwrite(fileNameImage, image)
 
