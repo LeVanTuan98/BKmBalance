@@ -78,7 +78,8 @@ while True:
 workbook = xlsxwriter.Workbook('Evaluation_Results_by_Excel/' + direction + '.xlsx')
 worksheet = workbook.add_worksheet()
 col = 0
-worksheet.write_row(0, 0, ['X'])
+time = np.linspace(0, np.len(real_coor))
+worksheet.write_row(0, 0, ['Time' 'X'])
 for row, data in enumerate(real_coor):
     worksheet.write_row(row + 1, col, data)
 workbook.close()
