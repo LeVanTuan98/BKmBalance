@@ -75,8 +75,6 @@ def detect_white_frame(original_image):
     blueLower = (100, 50, 50)
     blueUpper = (120, 255, 255)
 
-    screenCntWhite = 0
-
     # convert the image to grayscale, blur it, and find edges
     # in the image
     blurred = cv2.GaussianBlur(image, (5, 5), 0)
@@ -101,7 +99,7 @@ def detect_white_frame(original_image):
     cntsBlue = imutils.grab_contours(cntsBlue)
     cntsBlue = sorted(cntsBlue, key=cv2.contourArea, reverse=True)[:4]
 
-    screenCntWhite = original_image
+    screenCntWhite = np.zeros_like(original_image)          # Khởi tạo vùng màu đen không có gì
     # loop over the contours
     for roiBlue in cntsBlue:
 
@@ -164,13 +162,14 @@ def detect_white_frame(original_image):
                 else:
                     continue
 
-        if screenCntWhite != original_image:
+        if screenCntWhite.any() != 0:  # Nếu có gì khác vùng đen ban đầu
             break
 
     # cv2.imshow('Mask-nghieng', original_image)
     # cv2.imwrite('Mask-nghieng.jpg', original_image)
-    if screenCntWhite == original_image:
+    if screenCntWhite.all() == 0:  # Nếu tất cả đều đen thui
         print("Không tìm thấy vùng màu trắng chứa laser point")
+        return screenCntWhite
     else:
         warpedWhite, _, _, _, _ = four_point_transform(original_image, screenCntWhite.reshape(4, 2))
         return warpedWhite
@@ -180,11 +179,11 @@ def detect_white_frame(original_image):
 def find_center_point(warped_image):
     ## Find centre of laser poiter (x, y)
     frame = warped_image.copy()
-    laserLower = (0, 0, 245)
-    laserUpper = (255, 150, 255)
+    whiteLower = (0, 0, 245)
+    whiteUpper = (255, 150, 255)
     hsvWar = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    maskWar = cv2.inRange(hsvWar, laserLower, laserUpper)
+    maskWar = cv2.inRange(hsvWar, whiteLower, whiteUpper)
 
     maskWar = cv2.erode(maskWar, None, iterations=2)
     maskWar = cv2.dilate(maskWar, None, iterations=2)  # Đang là ảnh Gray với 2 mức xám 0 và 255
@@ -201,9 +200,13 @@ def find_center_point(warped_image):
     blurred = cv2.GaussianBlur(gray, (3, 3), 0)
     thresh = cv2.threshold(blurred, 240, 255, cv2.THRESH_BINARY_INV)[1]
     canny = cv2.Canny(thresh, 50, 255, 1)
-    delta = 30
-    mask_laser = canny[y - delta: y + delta, x - delta: x + delta]
+    # cv2.imshow('canny', canny)
 
+    delta = 30
+    if (x < delta) | (y < delta):
+        delta = 15
+
+    mask_laser = canny[y - delta: y + delta, x - delta: x + delta]
     # Focusing on [top right bottom left] of red region
     [top, bottom, left, right] = FindTRBL(mask_laser)
     cX = x + int((right + left) / 2) - delta
@@ -241,11 +244,12 @@ def detect_grid_coodinate(warped_image):
     # threshold
     th, threshed = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
     # cv2.imshow("thresh", threshed)
+
     # findcontours
     cnts = cv2.findContours(threshed, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[-2]
     # filter by area
     number_dot_per_line = 10
-    S_min = 30
+    S_min = 20
     S_max = 300
     xcnts = []
     coor_x = []
@@ -260,7 +264,8 @@ def detect_grid_coodinate(warped_image):
             grid_x = int(M["m10"] / M["m00"])
             grid_y = int(M["m01"] / M["m00"])
             # remove the spot which locate in the image 's edge
-            if (20 < grid_x < size_image[1] - 20) & (20 < grid_y < size_image[0] - 20):
+            SD = 5
+            if (SD < grid_x < size_image[1] - SD) & (SD < grid_y < size_image[0] - SD):
                 xcnts.append(cnt)
                 coor_x.append(grid_x)
                 coor_y.append(grid_y)
@@ -315,20 +320,19 @@ def calculate_real_coordinate_of_laser_pointer(cX, cY, ver_coor):
     delta_x = np.diff(ver_coor)
     # delta_y = np.diff(honCoor)
 
-
-# Tinh khoang cach tu tam den duong dau tien ben trai
-# Neu tam nam giua 2 cot => tinh ty le khoang cach tu tam den cot ben trai gan nhat + so cot o giua
+    # Tinh khoang cach tu tam den duong dau tien ben trai
+    # Neu tam nam giua 2 cot => tinh ty le khoang cach tu tam den cot ben trai gan nhat + so cot o giua
     if (cX < min(ver_coor)):
-        print("Vuot ra khoi luoi")
+        print("[WARNING] Vuot ra khoi luoi")
         x_real = 0
     else:
-        delta = ver_coor - np.ones(np.size(ver_coor))*cX
+        delta = ver_coor - np.ones(np.size(ver_coor)) * cX
         minValue = min(abs(delta))
         for i in range(len(delta) - 1):
             if np.sign(delta[i]) != np.sign(delta[i + 1]):
                 # Tinh khoang cach den i - cot ben trai gan nhat
-                scale_x = real_size[0]/(delta_x[i])
-                x_real = round((cX - ver_coor[i])*scale_x + i, 2)
+                scale_x = real_size[0] / (delta_x[i])
+                x_real = round((cX - ver_coor[i]) * scale_x + i, 2)
             if abs(delta[i]) == minValue:
                 if minValue == 0:
                     x_real = i
