@@ -162,11 +162,14 @@ def detect_white_frame(original_image):
         if screenCntWhite.all() != 0:
             break
 
+    # cv2.imshow('Mask-nghieng', original_image)
+    cv2.imwrite('Mask-nghieng.jpg', original_image)
     if screenCntWhite.all() == 0:
         print("Khong tim thay vung mau trang")
     else:
         warpedWhite, _, _, _, _ = four_point_transform(original_image, screenCntWhite.reshape(4, 2))
 
+    cv2.imshow('Mask_wapred', warpedWhite)
     return warpedWhite
 
 def find_center_point(warped_image):

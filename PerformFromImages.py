@@ -4,15 +4,16 @@ from BW_functions import *
 real_coor = []
 final_width = 680
 final_height = 249
-direction = 'video7-8/video7-8_3'
-for i in range(60, 61):
+direction = 'Input_Images/image_White-Blue'
+for i in range(1,2):
     # filename_read = 'images/video6-8/outImage%s.jpg' % (i)
     # filename_write = 'Detected Images/video6-8/detectedImage%s.jpg' %(i)
-    filename_read = 'Input_Images/' + direction + '/frame' + str('{0:04}'.format(i)) + '.jpg'
-    filename_write = 'Detected_Images/' + direction + '/detected' + str('{0:04}'.format(i)) + '.jpg'
+    # filename_read = 'Input_Images/' + direction + '/frame' + str('{0:04}'.format(i)) + '.jpg'
+    # filename_write = 'Detected_Images/' + direction + '/detected' + str('{0:04}'.format(i)) + '.jpg'
 
+    filename_read = 'Input_Images/image_White-Blue/nghieng1.jpg'
     print(filename_read)
-    print(filename_write)
+    # print(filename_write)
 
 # STEP 1: Load image
     original_image = cv2.imread(filename_read)
@@ -41,7 +42,7 @@ for i in range(60, 61):
 
     final_images = cv2.resize(src=white_frame, dsize=(final_width, final_height))
     cv2.imshow("Final image", white_frame)
-    cv2.imwrite(filename_write, white_frame)
+    # cv2.imwrite(filename_write, white_frame)
 
 # STEP 6: Calculate the distance change
     # if i == 1

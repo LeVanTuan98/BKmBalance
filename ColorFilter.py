@@ -17,7 +17,7 @@ cv2.createTrackbar("V_max", "Trackbars", 255, 255, nothing)
 
 while True:
     # read image
-    image = cv2.imread("images/video27-6/MayTuan/frame0311.jpg")
+    image = cv2.imread("Input_Images/image_White-Blue/1.jpg")
 
     # resize image
     image = cv2.resize(image, (320, 240))

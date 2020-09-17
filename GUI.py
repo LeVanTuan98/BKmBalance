@@ -157,36 +157,36 @@ class Ui_MainWindow(object):
     def btnChose_handler(self):
         print("Press chose")
         self.open_dialog_box()
-        print(path)
+        print(pathVideo)
+        print(nameVideo)
 
     def open_dialog_box(self):
-        filename = QFileDialog.getOpenFileName()
-        global path
-        path = filename[0]
+        pathFile = QFileDialog.getOpenFileName()
+        global pathVideo
+        pathVideo = pathFile[0]
+        global nameVideo
+        nameVideo = os.path.splitext(os.path.basename(pathVideo))[0]
 
     def btnCalib_handler(self):
         print("Press calib")
         print("Press 'q' to quit")
-        os.system('python Calib.py --video %s' % path)
+        os.system('python Calib.py --pvideo %s' % pathVideo)
 
     def btnChart_handler(self):
         print("Press Show chart line")
         print("Show line chart with base line is mean value")
-        os.system('python CalculateFromExcelFile.py')
+        os.system('python CalculateFromExcelFile.py --presult %s' %nameVideo)
 
     def btnProcess_handler(self):
         print("Press process")
         print("Make image data, .exel for video, chart line")
-        os.system('python PerformFromVideo.py')
+        os.system('python PerformFromVideo.py --pvideo %s --nvideo %s' %(pathVideo, nameVideo) ) #https://pyformat.info/
 
     def btnVideo_handler(self):
         print("Press show video detection")
-        print("Show video detect white paper")
+        print("Show video detect white paper, press 'q' to quit")
         print("Please waitting video")
-        os.system('python MakeVideo.py')
-
-
-
+        os.system('python MakeVideo.py --pimage %s' % nameVideo) # đường dẫn lấy ảnh dựa vào tên video
 
 if __name__ == "__main__":
     import sys
