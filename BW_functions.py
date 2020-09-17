@@ -69,8 +69,8 @@ def four_point_transform(image, pts):
 def detect_white_frame(original_image):
     image = original_image.copy()
 
-    whiteLower = (0, 0, 245)
-    whiteUpper = (255, 255, 255)
+    laserLower = (150, 50, 245)
+    laserUpper = (179, 255, 255)
 
     blueLower = (100, 50, 50)
     blueUpper = (120, 255, 255)
@@ -87,12 +87,10 @@ def detect_white_frame(original_image):
     maskBlue = cv2.erode(maskBlue, None, iterations=2)
     maskBlue = cv2.dilate(maskBlue, None, iterations=2)
 
-
     # show the original image and the edge detected image
 ## STEP 1: Color Detection - BLUE
     # cv2.imshow("Image", image)
     # cv2.imshow("Color", maskBlue)
-    # cv2.imwrite("color.jpg", maskBlue)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
 
@@ -103,8 +101,10 @@ def detect_white_frame(original_image):
     cntsBlue = imutils.grab_contours(cntsBlue)
     cntsBlue = sorted(cntsBlue, key=cv2.contourArea, reverse=True)[:4]
 
+    screenCntWhite = original_image
     # loop over the contours
     for roiBlue in cntsBlue:
+
         peri = cv2.arcLength(roiBlue, True)
         approx = cv2.approxPolyDP(roiBlue, 0.02 * peri, True)
 
@@ -118,18 +118,22 @@ def detect_white_frame(original_image):
         blurredWar = cv2.GaussianBlur(warpedBlue, (5, 5), 0)
         hsvWar = cv2.cvtColor(warpedBlue, cv2.COLOR_BGR2HSV)
 
-        maskWar = cv2.inRange(hsvWar, whiteLower, whiteUpper)
+        maskWar = cv2.inRange(hsvWar, laserLower, laserUpper) # Ảnh này show ra laser nếu có
 
         maskWar = cv2.erode(maskWar, None, iterations=2)
         maskWar = cv2.dilate(maskWar, None, iterations=2)  # Đang là ảnh Gray với 2 mức xám 0 và 255
-
+        cv2.imshow("mask", maskWar)
 
         # calculate moments of binary image
         M = cv2.moments(maskWar)
 
+        try:
         # calculate x,y coordinate of center
-        cXTemp = int(M["m10"] / M["m00"])
-        cYTemp = int(M["m01"] / M["m00"])
+            cXTemp = int(M["m10"] / M["m00"])
+            cYTemp = int(M["m01"] / M["m00"])
+        except:
+            print("Không tìm thấy laser. Tiếp tục vòng lặp")
+            continue
 
         warpedBlue = cv2.medianBlur(origBlue, 5)
         grayImage = cv2.cvtColor(warpedBlue, cv2.COLOR_BGR2GRAY)
@@ -160,27 +164,27 @@ def detect_white_frame(original_image):
                 else:
                     continue
 
-        if screenCntWhite.all() != 0:
+        if screenCntWhite != original_image:
             break
 
     # cv2.imshow('Mask-nghieng', original_image)
     # cv2.imwrite('Mask-nghieng.jpg', original_image)
-    if screenCntWhite.all() == 0:
-        print("Khong tim thay vung mau trang")
+    if screenCntWhite == original_image:
+        print("Không tìm thấy vùng màu trắng chứa laser point")
     else:
         warpedWhite, _, _, _, _ = four_point_transform(original_image, screenCntWhite.reshape(4, 2))
-
+        return warpedWhite
     # cv2.imshow('Mask_wapred', warpedWhite)
-    return warpedWhite
+
 
 def find_center_point(warped_image):
     ## Find centre of laser poiter (x, y)
     frame = warped_image.copy()
-    whiteLower = (0, 0, 245)
-    whiteUpper = (255, 150, 255)
+    laserLower = (0, 0, 245)
+    laserUpper = (255, 150, 255)
     hsvWar = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    maskWar = cv2.inRange(hsvWar, whiteLower, whiteUpper)
+    maskWar = cv2.inRange(hsvWar, laserLower, laserUpper)
 
     maskWar = cv2.erode(maskWar, None, iterations=2)
     maskWar = cv2.dilate(maskWar, None, iterations=2)  # Đang là ảnh Gray với 2 mức xám 0 và 255
@@ -197,13 +201,9 @@ def find_center_point(warped_image):
     blurred = cv2.GaussianBlur(gray, (3, 3), 0)
     thresh = cv2.threshold(blurred, 240, 255, cv2.THRESH_BINARY_INV)[1]
     canny = cv2.Canny(thresh, 50, 255, 1)
-    # cv2.imshow('canny', canny)
-
     delta = 30
-    if (x < delta) | (y < delta):
-        delta = 15
-
     mask_laser = canny[y - delta: y + delta, x - delta: x + delta]
+
     # Focusing on [top right bottom left] of red region
     [top, bottom, left, right] = FindTRBL(mask_laser)
     cX = x + int((right + left) / 2) - delta
@@ -241,12 +241,11 @@ def detect_grid_coodinate(warped_image):
     # threshold
     th, threshed = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
     # cv2.imshow("thresh", threshed)
-
     # findcontours
     cnts = cv2.findContours(threshed, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[-2]
     # filter by area
     number_dot_per_line = 10
-    S_min = 20
+    S_min = 30
     S_max = 300
     xcnts = []
     coor_x = []
@@ -261,8 +260,7 @@ def detect_grid_coodinate(warped_image):
             grid_x = int(M["m10"] / M["m00"])
             grid_y = int(M["m01"] / M["m00"])
             # remove the spot which locate in the image 's edge
-            SD = 5
-            if (SD < grid_x < size_image[1] - SD) & (SD < grid_y < size_image[0] - SD):
+            if (20 < grid_x < size_image[1] - 20) & (20 < grid_y < size_image[0] - 20):
                 xcnts.append(cnt)
                 coor_x.append(grid_x)
                 coor_y.append(grid_y)
@@ -321,7 +319,7 @@ def calculate_real_coordinate_of_laser_pointer(cX, cY, ver_coor):
 # Tinh khoang cach tu tam den duong dau tien ben trai
 # Neu tam nam giua 2 cot => tinh ty le khoang cach tu tam den cot ben trai gan nhat + so cot o giua
     if (cX < min(ver_coor)):
-        print("[WARNING] Vuot ra khoi luoi")
+        print("Vuot ra khoi luoi")
         x_real = 0
     else:
         delta = ver_coor - np.ones(np.size(ver_coor))*cX
