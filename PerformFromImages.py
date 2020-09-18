@@ -1,25 +1,37 @@
 import matplotlib as plt
 import xlsxwriter
 from BW_functions import *
+import os
+
 real_coor = []
 final_width = 680
 final_height = 249
-#direction = 'Input_Images/image_White-Blue'
-for i in range(1, 12):
-    filename_read = 'Input_Images/Calib_Images/%scm.jpg' % (i - 1)
-    filename_write ='Output_Images/Calib_Images/%scm.jpg' % (i - 1)
-    # filename_read = 'Input_Images/' + direction + '/frame' + str('{0:04}'.format(i)) + '.jpg'
-    # filename_write = 'Detected_Images/' + direction + '/detected' + str('{0:04}'.format(i)) + '.jpg'
 
-    # filename_read = 'Input_Images/Calib_Images/nolaser.jpg'
-    print('\n'+ filename_read)
-    # print(filename_write)
+direction = 'day17-09/verDir'
+
+if not os.path.exists('Input_Images/' + direction):
+    os.makedirs('Input_Images/' + direction)
+
+if not os.path.exists('Detected_Images/' + direction):
+    os.makedirs('Detected_Images/' + direction)
+
+# if not os.path.exists('Evaluation_Results_by_Excel/' + direction):
+#     os.makedirs('Evaluation_Results_by_Excel/' + direction)
+
+for i in range(1, 2):
+    # filename_read = 'Input_Images/Calib_Images/%scm.jpg' % (i - 1)
+    # filename_write ='Output_Images/Calib_Images/%scm.jpg' % (i - 1)
+
+    filename_read = 'Input_Images/' + direction + '/frame' + str('{0:04}'.format(i)) + '.jpg'
+    filename_write = 'Detected_Images/' + direction + '/detected' + str('{0:04}'.format(i)) + '.jpg'
+
+    print(filename_read)
+    print(filename_write)
 
 # STEP 1: Load image
     original_image = cv2.imread(filename_read)
     # cv2.imshow("Original image", original_image)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+
 # STEP 2: Detect WHITE frame and the coordinate of laser pointer
     white_frame = detect_white_frame(original_image)
     # cv2.imshow("Detected white frame", white_frame)
@@ -32,7 +44,6 @@ for i in range(1, 12):
 
 # STEP 4: Determine the coordinate of the Grid
     line1, line2, ver_coor = detect_grid_coodinate(white_frame)
-
 # STEP 5: Calculate the real coordinate of the laser pointer
     distance_x = calculate_real_coordinate_of_laser_pointer(cX, cY, ver_coor)
     print("Khoang cach: " + str(distance_x))
@@ -56,11 +67,10 @@ for i in range(1, 12):
 # print(np.shape(real_coor))
 
 # After STEP 7, Save Data[X] into Excel file
-workbook = xlsxwriter.Workbook('Evaluation_Results_by_Excel/Calib_Images.xlsx')
+workbook = xlsxwriter.Workbook('Evaluation_Results_by_Excel/' + direction + '.xlsx')
 worksheet = workbook.add_worksheet()
 col = 0
-time = np.linspace(0, len(real_coor))
-worksheet.write_row(0, 0, ['Time' 'X'])
+worksheet.write_row(0, 0, ['Time', 'X'])
 for row, data in enumerate(real_coor):
     worksheet.write_row(row + 1, col, data)
 workbook.close()

@@ -75,12 +75,16 @@ def detect_white_frame(original_image):
     blueLower = (100, 50, 50)
     blueUpper = (120, 255, 255)
 
+    # blueLower = (89, 0, 50)
+    # blueUpper = (120, 170, 170)
+
     # convert the image to grayscale, blur it, and find edges
     # in the image
     blurred = cv2.GaussianBlur(image, (5, 5), 0)
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
     maskBlue = cv2.inRange(hsv, blueLower, blueUpper)
+
 
     maskBlue = cv2.erode(maskBlue, None, iterations=2)
     maskBlue = cv2.dilate(maskBlue, None, iterations=2)
@@ -120,7 +124,6 @@ def detect_white_frame(original_image):
 
         maskWar = cv2.erode(maskWar, None, iterations=2)
         maskWar = cv2.dilate(maskWar, None, iterations=2)  # Đang là ảnh Gray với 2 mức xám 0 và 255
-        cv2.imshow("mask", maskWar)
 
         # calculate moments of binary image
         M = cv2.moments(maskWar)
@@ -130,7 +133,7 @@ def detect_white_frame(original_image):
             cXTemp = int(M["m10"] / M["m00"])
             cYTemp = int(M["m01"] / M["m00"])
         except:
-            print("Không tìm thấy laser. Tiếp tục vòng lặp")
+            print("[LOG] Khong tim thay laser.")
             continue
 
         warpedBlue = cv2.medianBlur(origBlue, 5)
@@ -168,13 +171,12 @@ def detect_white_frame(original_image):
     # cv2.imshow('Mask-nghieng', original_image)
     # cv2.imwrite('Mask-nghieng.jpg', original_image)
     if screenCntWhite.all() == 0:  # Nếu tất cả đều đen thui
-        print("Không tìm thấy vùng màu trắng chứa laser point")
+        print("[WARNING] Khong co vung trang thoa man")
         return screenCntWhite
     else:
         warpedWhite, _, _, _, _ = four_point_transform(original_image, screenCntWhite.reshape(4, 2))
+        # cv2.imshow('Mask_wapred', warpedWhite)
         return warpedWhite
-    # cv2.imshow('Mask_wapred', warpedWhite)
-
 
 def find_center_point(warped_image):
     ## Find centre of laser poiter (x, y)
@@ -195,6 +197,9 @@ def find_center_point(warped_image):
     x = int(M["m10"] / M["m00"])
     y = int(M["m01"] / M["m00"])
 
+    # cv2.circle(warped_image, (x, y), 5, (0, 0, 255), 1, cv2.LINE_AA)
+    # cv2.imshow("laser position", warped_image)
+
     # Improve the algorithm finding the centre laser
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # color -> gray
     blurred = cv2.GaussianBlur(gray, (3, 3), 0)
@@ -209,6 +214,8 @@ def find_center_point(warped_image):
     mask_laser = canny[y - delta: y + delta, x - delta: x + delta]
     # Focusing on [top right bottom left] of red region
     [top, bottom, left, right] = FindTRBL(mask_laser)
+    if (top == 0) & (bottom == 0) & (left == 0) & (right == 0):
+        return x, y
     cX = x + int((right + left) / 2) - delta
     cY = y + int((top + bottom) / 2) - delta
     return cX, cY
@@ -241,40 +248,52 @@ def detect_grid_coodinate(warped_image):
     image = warped_image.copy()
     size_image = np.shape(image)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
     # threshold
     th, threshed = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
     # cv2.imshow("thresh", threshed)
-
+    # cv2.waitKey(0)
     # findcontours
     cnts = cv2.findContours(threshed, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[-2]
     # filter by area
     number_dot_per_line = 10
-    S_min = 20
+    S_min = 5
     S_max = 300
     xcnts = []
     coor_x = []
     coor_y = []
 # Tim tam cua cac nut luoi dua vao dieu kien dien tich [S_min, S_max]
     for cnt in cnts:
-        if S_min < cv2.contourArea(cnt) < S_max:
+        if S_min < cv2.contourArea(cnt):
             # calculate moments of binary image
             M = cv2.moments(cnt)
 
             # calculate x,y coordinate of center
             grid_x = int(M["m10"] / M["m00"])
             grid_y = int(M["m01"] / M["m00"])
+
+            isDotOK = 1
+            if cv2.contourArea(cnt) < 20:
+                if len(xcnts) != 0:
+                    for i in range(len(xcnts)):
+                        if (coor_y[i] - 3 < grid_y < coor_y[i] + 3) | (coor_x[i] - 3 < grid_x < coor_x[i] + 3):
+                            break
+                    isDotOK = 0
             # remove the spot which locate in the image 's edge
             SD = 5
-            if (SD < grid_x < size_image[1] - SD) & (SD < grid_y < size_image[0] - SD):
+            if (SD < grid_x < size_image[1] - SD) & (SD < grid_y < size_image[0] - SD) & (isDotOK == 1):
                 xcnts.append(cnt)
                 coor_x.append(grid_x)
                 coor_y.append(grid_y)
                 cv2.circle(image, (grid_x, grid_y), 2, (255, 0, 0), 2, cv2.LINE_AA)
 
-    # cv2.imshow("grid_image", image)
+
     if len(xcnts) != number_dot_per_line * 2:
-        print('[ERROR] Co %d diem nut!!!' % (len(xcnts)) )
-    # cv2.circle(image, (cX, cY), 5, (0, 0, 255), 1, cv2.LINE_AA)
+        print('[ERROR] Co %d diem nut!!!' % (len(xcnts)))
+
+    # cv2.circle(image, (347, 80), 5, (0, 0, 255), 1, cv2.LINE_AA)
+    # cv2.imshow("grid_image", image)
+    # cv2.waitKey(0)
 
     line1 = [] # toa do cua cac diem hang tren
     line2 = [] # toa do cac diem hang duoi
@@ -285,16 +304,21 @@ def detect_grid_coodinate(warped_image):
         y1 = coor_y[0]
         coor_x.pop(0)
         coor_y.pop(0)
-        coor_temp = abs(coor_x - np.ones(np.size(coor_x)) * x1)
-        min_temp = min(coor_temp)
-        for j in range(len(coor_temp)):
-            if coor_temp[j] == min_temp:
-                index_x2 = j
-                break
-        x2 = coor_x[index_x2]
-        y2 = coor_y[index_x2]
-        coor_x.pop(index_x2)
-        coor_y.pop(index_x2)
+
+        if (len(coor_x) == 0):
+            x2 = x1
+            y2 = size_image[0] - 50
+        else:
+            coor_temp = abs(coor_x - np.ones(np.size(coor_x)) * x1)
+            min_temp = min(coor_temp)
+            for j in range(len(coor_temp)):
+                if coor_temp[j] == min_temp:
+                    index_x2 = j
+                    break
+            x2 = coor_x[index_x2]
+            y2 = coor_y[index_x2]
+            coor_x.pop(index_x2)
+            coor_y.pop(index_x2)
         xtb = int((x1 + x2) / 2)
         ver_coor.append(xtb)
         if y1 < y2:
@@ -325,6 +349,9 @@ def calculate_real_coordinate_of_laser_pointer(cX, cY, ver_coor):
     if (cX < min(ver_coor)):
         print("[WARNING] Vuot ra khoi luoi")
         x_real = 0
+    if (cX > max(ver_coor)):
+        print("[WARNING] Vuot ra khoi luoi")
+        x_real = 9
     else:
         delta = ver_coor - np.ones(np.size(ver_coor)) * cX
         minValue = min(abs(delta))
