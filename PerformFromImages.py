@@ -18,7 +18,7 @@ if not os.path.exists('Detected_Images/' + direction):
 # if not os.path.exists('Evaluation_Results_by_Excel/' + direction):
 #     os.makedirs('Evaluation_Results_by_Excel/' + direction)
 
-for i in range(1, 2):
+for i in range(1000, 1001):
     # filename_read = 'Input_Images/Calib_Images/%scm.jpg' % (i - 1)
     # filename_write ='Output_Images/Calib_Images/%scm.jpg' % (i - 1)
 
@@ -37,6 +37,7 @@ for i in range(1, 2):
     # cv2.imshow("Detected white frame", white_frame)
 
     if white_frame.all() == 0:
+        print("[LOG] Bỏ qua ảnh này\n")
         continue
 # STEP 3: Find center point
     cX, cY = find_center_point(white_frame)
