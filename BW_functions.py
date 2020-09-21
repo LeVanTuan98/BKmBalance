@@ -5,6 +5,14 @@ import cv2
 import imutils
 import matplotlib.pyplot as plt
 
+laserLower = (150, 50, 245)
+laserUpper = (179, 255, 255)
+
+# blueLower = (100, 50, 50)
+# blueUpper = (120, 255, 255)
+
+blueLower = (110, 50, 75)
+blueUpper = (140, 255, 255)
 
 def order_points(pts):
     # initialzie a list of coordinates that will be ordered
@@ -68,15 +76,6 @@ def four_point_transform(image, pts):
 
 def detect_white_frame(original_image):
     image = original_image.copy()
-
-    laserLower = (150, 50, 245)
-    laserUpper = (179, 255, 255)
-
-    blueLower = (100, 50, 50)
-    blueUpper = (120, 255, 255)
-
-    # blueLower = (89, 0, 50)
-    # blueUpper = (120, 170, 170)
 
     # convert the image to grayscale, blur it, and find edges
     # in the image
@@ -181,11 +180,9 @@ def detect_white_frame(original_image):
 def find_center_point(warped_image):
     ## Find centre of laser poiter (x, y)
     frame = warped_image.copy()
-    whiteLower = (0, 0, 245)
-    whiteUpper = (255, 150, 255)
     hsvWar = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    maskWar = cv2.inRange(hsvWar, whiteLower, whiteUpper)
+    maskWar = cv2.inRange(hsvWar, laserLower, laserUpper)
 
     maskWar = cv2.erode(maskWar, None, iterations=2)
     maskWar = cv2.dilate(maskWar, None, iterations=2)  # Đang là ảnh Gray với 2 mức xám 0 và 255
@@ -276,7 +273,7 @@ def detect_grid_coodinate(warped_image):
             if cv2.contourArea(cnt) < 20:
                 if len(xcnts) != 0:
                     for i in range(len(xcnts)):
-                        if (coor_y[i] - 3 < grid_y < coor_y[i] + 3) | (coor_x[i] - 3 < grid_x < coor_x[i] + 3):
+                        if (coor_y[i] - 5 < grid_y < coor_y[i] + 5) | (coor_x[i] - 5 < grid_x < coor_x[i] + 5):
                             break
                     isDotOK = 0
             # remove the spot which locate in the image 's edge
@@ -307,18 +304,22 @@ def detect_grid_coodinate(warped_image):
 
         if (len(coor_x) == 0):
             x2 = x1
-            y2 = size_image[0] - 50
+            y2 = line2[0][1] if (y1 < 50) else line1[0][1]
         else:
             coor_temp = abs(coor_x - np.ones(np.size(coor_x)) * x1)
             min_temp = min(coor_temp)
-            for j in range(len(coor_temp)):
-                if coor_temp[j] == min_temp:
-                    index_x2 = j
-                    break
-            x2 = coor_x[index_x2]
-            y2 = coor_y[index_x2]
-            coor_x.pop(index_x2)
-            coor_y.pop(index_x2)
+            if (min_temp > 10):
+                x2 = x1
+                y2 = line2[0][1] if (y1 < 50) else line1[0][1]
+            else:
+                for j in range(len(coor_temp)):
+                    if coor_temp[j] == min_temp:
+                        index_x2 = j
+                        break
+                x2 = coor_x[index_x2]
+                y2 = coor_y[index_x2]
+                coor_x.pop(index_x2)
+                coor_y.pop(index_x2)
         xtb = int((x1 + x2) / 2)
         ver_coor.append(xtb)
         if y1 < y2:
@@ -329,8 +330,8 @@ def detect_grid_coodinate(warped_image):
             line1.append([xtb, y2])
     # print(line1)
     # print(line2)
-    # print(ver_coor)
     ver_coor.sort()
+    # print(ver_coor)
     return line1, line2, ver_coor
 def calculate_real_coordinate_of_laser_pointer(cX, cY, ver_coor):
     # Input: x, y: Toa do tam cua diem laser
