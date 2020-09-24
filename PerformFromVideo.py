@@ -8,7 +8,7 @@ real_coor = []
 
 final_width = 680
 final_height = 249
-direction = 'day17-09/verDir'
+direction = 'day21-09/verDir'
 
 if not os.path.exists('Input_Images/' + direction):
     os.makedirs('Input_Images/' + direction)
@@ -16,8 +16,9 @@ if not os.path.exists('Input_Images/' + direction):
 if not os.path.exists('Detected_Images/' + direction):
     os.makedirs('Detected_Images/' + direction)
 
-# if not os.path.exists('Evaluation_Results_by_Excel/' + direction):
-#     os.makedirs('Evaluation_Results_by_Excel/' + direction)
+if not os.path.exists('Evaluation_Results_by_Excel/' + direction.split('/')[0]):
+    os.makedirs('Evaluation_Results_by_Excel/' + direction.split('/')[0])
+
 
 # Doc file video (khoảng 60 khung/s)
 cap = cv2.VideoCapture('Input_Videos/' + direction + '.mp4')
