@@ -8,19 +8,19 @@ def nothing(x):
 
 # create Trackbars
 cv2.namedWindow("Trackbars")
-cv2.createTrackbar("H_min", "Trackbars", 0, 255, nothing)
+cv2.createTrackbar("H_min", "Trackbars", 0, 179, nothing)
 cv2.createTrackbar("S_min", "Trackbars", 0, 255, nothing)
 cv2.createTrackbar("V_min", "Trackbars", 0, 255, nothing)
-cv2.createTrackbar("H_max", "Trackbars", 255, 255, nothing)
+cv2.createTrackbar("H_max", "Trackbars", 255, 179, nothing)
 cv2.createTrackbar("S_max", "Trackbars", 255, 255, nothing)
 cv2.createTrackbar("V_max", "Trackbars", 255, 255, nothing)
 
 while True:
     # read image
-    image = cv2.imread('Input_Images/day21-09/verDir/frame0301.jpg')
+    image = cv2.imread('Input_Images/day24-09/PhiaSau_Trim1/frame0070.jpg')
 
     # resize image
-    image = cv2.resize(image, (320, 240))
+    # image = cv2.resize(image, (320, 240))
 
     # converting frame(image == BGR) to HSV(hue-saturation-value)
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -43,8 +43,8 @@ while True:
     mask = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
     result = cv2.bitwise_and(image, image, mask=mask)
-    cv2.imshow("Original", image)
-    cv2.imshow("mask", mask)
+    # cv2.imshow("Original", image)
+    # cv2.imshow("mask", mask)
     cv2.imshow("result", result)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         exit()

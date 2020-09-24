@@ -5,15 +5,13 @@ import cv2
 import imutils
 import matplotlib.pyplot as plt
 
-laserLower = (150, 50, 245)
-laserUpper = (179, 255, 255)
+laserLower = (130, 20, 245)
+laserUpper = (179, 100, 255)
 
-# blueLower = (100, 50, 50)
-# blueUpper = (120, 255, 255)
-
-blueLower = (110, 50, 75)
+blueLower = (80, 30, 30)
 blueUpper = (140, 255, 255)
 
+# origLaser = np.zeros(0)
 def order_points(pts):
     # initialzie a list of coordinates that will be ordered
     # such that the first entry in the list is the top-left,
@@ -77,6 +75,7 @@ def four_point_transform(image, pts):
 def detect_white_frame(original_image):
     image = original_image.copy()
 
+
     # convert the image to grayscale, blur it, and find edges
     # in the image
     blurred = cv2.GaussianBlur(image, (5, 5), 0)
@@ -90,10 +89,6 @@ def detect_white_frame(original_image):
 
     # show the original image and the edge detected image
 ## STEP 1: Color Detection - BLUE
-    # cv2.imshow("Image", image)
-    # cv2.imshow("Color", maskBlue)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
 
 # 1.1 Finding Contours
     # find the contours in the edged image, keeping only the
@@ -116,16 +111,25 @@ def detect_white_frame(original_image):
         warpedBlue[maskBlue == 255] = original_image[maskBlue == 255]
         origBlue = warpedBlue
 
-        blurredWar = cv2.GaussianBlur(warpedBlue, (5, 5), 0)
-        hsvWar = cv2.cvtColor(warpedBlue, cv2.COLOR_BGR2HSV)
+        hsvWar = cv2.cvtColor(warpedBlue, cv2.COLOR_RGB2HSV)
 
-        maskWar = cv2.inRange(hsvWar, laserLower, laserUpper) # Ảnh này show ra laser nếu có
+        maskWarLaser = cv2.inRange(hsvWar, laserLower, laserUpper) # Ảnh này show ra laser nếu có
+        warpedLaser = np.zeros_like(original_image)  # Extract out the object and place into output image
+        warpedLaser[maskWarLaser == 255] = original_image[maskWarLaser == 255]
+        origLaser = warpedLaser
 
-        maskWar = cv2.erode(maskWar, None, iterations=2)
-        maskWar = cv2.dilate(maskWar, None, iterations=2)  # Đang là ảnh Gray với 2 mức xám 0 và 255
+        # maskWarLaser = cv2.erode(maskWarLaser, None, iterations=1)
+        # maskWarLaser = cv2.dilate(maskWarLaser, None, iterations=1)  # Đang là ảnh Gray với 2 mức xám 0 và 255
+
+        # [DEBUG MODE]
+        cv2.imshow('Color laser', origLaser)
+        cv2.imshow('Mask laser', maskWarLaser)
+
+        cv2.imshow('Original image', original_image)
+        cv2.imshow('Warped blue image', origBlue)
 
         # calculate moments of binary image
-        M = cv2.moments(maskWar)
+        M = cv2.moments(maskWarLaser)
 
         try:
         # calculate x,y coordinate of center
@@ -139,7 +143,10 @@ def detect_white_frame(original_image):
         grayImage = cv2.cvtColor(warpedBlue, cv2.COLOR_BGR2GRAY)
 
         # valueThreshold, binaryImage = cv2.threshold(grayImage, 125, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        valueThreshold, binaryImage = cv2.threshold(grayImage, 125, 255, cv2.ADAPTIVE_THRESH_MEAN_C)
+        valueThreshold, binaryImage = cv2.threshold(grayImage, 50, 255, cv2.ADAPTIVE_THRESH_MEAN_C)
+
+        # [DEBUG MODE]
+        # cv2.imshow('Original image', binaryImage)
 
         cntsWhite = cv2.findContours(binaryImage.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         cntsWhite = imutils.grab_contours(cntsWhite)
@@ -164,12 +171,12 @@ def detect_white_frame(original_image):
                 else:
                     continue
 
-        if screenCntWhite.any() != 0:  # Nếu có gì khác vùng đen ban đầu
+        if screenCntWhite.shape != original_image.shape:  # Nếu có gì khác vùng đen ban đầu
             break
 
     # cv2.imshow('Mask-nghieng', original_image)
     # cv2.imwrite('Mask-nghieng.jpg', original_image)
-    if screenCntWhite.all() == 0:  # Nếu tất cả đều đen thui
+    if screenCntWhite.shape == original_image.shape:  # Nếu tất cả đều đen thui
         print("[WARNING] Khong co vung trang thoa man")
         return screenCntWhite
     else:
@@ -184,8 +191,8 @@ def find_center_point(warped_image):
 
     maskWar = cv2.inRange(hsvWar, laserLower, laserUpper)
 
-    maskWar = cv2.erode(maskWar, None, iterations=2)
-    maskWar = cv2.dilate(maskWar, None, iterations=2)  # Đang là ảnh Gray với 2 mức xám 0 và 255
+    maskWar = cv2.erode(maskWar, None, iterations=1)
+    maskWar = cv2.dilate(maskWar, None, iterations=1)  # Đang là ảnh Gray với 2 mức xám 0 và 255
 
     # calculate moments of binary image
     M = cv2.moments(maskWar)

@@ -8,7 +8,7 @@ real_coor = []
 
 final_width = 680
 final_height = 249
-direction = 'day21-09/verDir'
+direction = 'day24-09/PhiaSau_Trim1'
 
 if not os.path.exists('Input_Images/' + direction):
     os.makedirs('Input_Images/' + direction)
@@ -51,7 +51,7 @@ while True:
 
     # STEP 2: Detect WHITE frame
     white_frame = detect_white_frame(original_image)
-    if white_frame.all() == 0:
+    if white_frame.shape == original_image.shape:
         continue
     # cv2.imshow("Detected white frame", white_frame)
     # cv2.imwrite(filename_read, white_frame)

@@ -7,7 +7,7 @@ real_coor = []
 final_width = 680
 final_height = 249
 
-direction = 'day21-09/verDir'
+direction = 'day24-09/PhiaSau_Trim1'
 
 if not os.path.exists('Input_Images/' + direction):
     os.makedirs('Input_Images/' + direction)
@@ -18,7 +18,7 @@ if not os.path.exists('Detected_Images/' + direction):
 if not os.path.exists('Evaluation_Results_by_Excel/' + direction.split('/')[0]):
     os.makedirs('Evaluation_Results_by_Excel/' + direction.split('/')[0])
 
-for i in range(301, 302):
+for i in range(372, 373):
     # filename_read = 'Input_Images/Calib_Images/%scm.jpg' % (i - 1)
     # filename_write ='Output_Images/Calib_Images/%scm.jpg' % (i - 1)
 
@@ -36,7 +36,7 @@ for i in range(301, 302):
     white_frame = detect_white_frame(original_image)
     # cv2.imshow("Detected white frame", white_frame)
 
-    if white_frame.all() == 0:
+    if  white_frame.shape == original_image.shape:
         continue
 # STEP 3: Find center point
     cX, cY = find_center_point(white_frame)
