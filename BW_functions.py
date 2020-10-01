@@ -122,11 +122,11 @@ def detect_white_frame(original_image):
         # maskWarLaser = cv2.dilate(maskWarLaser, None, iterations=1)  # Đang là ảnh Gray với 2 mức xám 0 và 255
 
         # [DEBUG MODE]
-        cv2.imshow('Color laser', origLaser)
-        cv2.imshow('Mask laser', maskWarLaser)
-
-        cv2.imshow('Original image', original_image)
-        cv2.imshow('Warped blue image', origBlue)
+        # cv2.imshow('Color laser', origLaser)
+        # cv2.imshow('Mask laser', maskWarLaser)
+        #
+        # cv2.imshow('Original image', original_image)
+        # cv2.imshow('Warped blue image', origBlue)
 
         # calculate moments of binary image
         M = cv2.moments(maskWarLaser)
@@ -143,7 +143,7 @@ def detect_white_frame(original_image):
         grayImage = cv2.cvtColor(warpedBlue, cv2.COLOR_BGR2GRAY)
 
         # valueThreshold, binaryImage = cv2.threshold(grayImage, 125, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        valueThreshold, binaryImage = cv2.threshold(grayImage, 50, 255, cv2.ADAPTIVE_THRESH_MEAN_C)
+        valueThreshold, binaryImage = cv2.threshold(grayImage, 100, 255, cv2.ADAPTIVE_THRESH_MEAN_C)
 
         # [DEBUG MODE]
         # cv2.imshow('Original image', binaryImage)
@@ -191,8 +191,8 @@ def find_center_point(warped_image):
 
     maskWar = cv2.inRange(hsvWar, laserLower, laserUpper)
 
-    maskWar = cv2.erode(maskWar, None, iterations=1)
-    maskWar = cv2.dilate(maskWar, None, iterations=1)  # Đang là ảnh Gray với 2 mức xám 0 và 255
+    # maskWar = cv2.erode(maskWar, None, iterations=1)
+    # maskWar = cv2.dilate(maskWar, None, iterations=1)  # Đang là ảnh Gray với 2 mức xám 0 và 255
 
     # calculate moments of binary image
     M = cv2.moments(maskWar)
@@ -290,6 +290,8 @@ def detect_grid_coodinate(warped_image):
                 coor_x.append(grid_x)
                 coor_y.append(grid_y)
                 cv2.circle(image, (grid_x, grid_y), 2, (255, 0, 0), 2, cv2.LINE_AA)
+                # cv2.imshow("grid_image", image)
+                # cv2.waitKey(0)
 
 
     if len(xcnts) != number_dot_per_line * 2:
