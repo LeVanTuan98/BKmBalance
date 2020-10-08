@@ -7,7 +7,7 @@ real_coor = []
 final_width = 680
 final_height = 249
 
-direction = 'day29-09/1Y'
+direction = 'day08-10/2Y'
 
 if not os.path.exists('Input_Images/' + direction):
     os.makedirs('Input_Images/' + direction)
@@ -18,7 +18,7 @@ if not os.path.exists('Detected_Images/' + direction):
 if not os.path.exists('Evaluation_Results_by_Excel/' + direction.split('/')[0]):
     os.makedirs('Evaluation_Results_by_Excel/' + direction.split('/')[0])
 
-for i in range(333, 334):
+for i in range(224, 225):
     # filename_read = 'Input_Images/Calib_Images/%scm.jpg' % (i - 1)
     # filename_write ='Output_Images/Calib_Images/%scm.jpg' % (i - 1)
 
@@ -38,6 +38,7 @@ for i in range(333, 334):
 
     if  white_frame.shape == original_image.shape:
         continue
+
 # STEP 3: Find center point
     cX, cY = find_center_point(white_frame)
     # print(cX, cY)

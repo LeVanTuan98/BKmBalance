@@ -5,11 +5,11 @@ import cv2
 import imutils
 import matplotlib.pyplot as plt
 
-laserLower = (130, 20, 245)
+laserLower = (100, 0, 230)
 laserUpper = (179, 100, 255)
 
 blueLower = (80, 30, 30)
-blueUpper = (140, 255, 255)
+blueUpper = (130, 255, 255)
 
 # origLaser = np.zeros(0)
 def order_points(pts):
@@ -102,7 +102,7 @@ def detect_white_frame(original_image):
     for roiBlue in cntsBlue:
 
         peri = cv2.arcLength(roiBlue, True)
-        approx = cv2.approxPolyDP(roiBlue, 0.02 * peri, True)
+        approx = cv2.approxPolyDP(roiBlue, 0.002 * peri, True)
 
         maskBlue = np.zeros_like(original_image)
         cv2.drawContours(maskBlue, [approx], 0, (255, 255, 255), -1)  # Draw filled contour in mask
@@ -111,7 +111,7 @@ def detect_white_frame(original_image):
         warpedBlue[maskBlue == 255] = original_image[maskBlue == 255]
         origBlue = warpedBlue
 
-        hsvWar = cv2.cvtColor(warpedBlue, cv2.COLOR_RGB2HSV)
+        hsvWar = cv2.cvtColor(warpedBlue, cv2.COLOR_BGR2HSV)
 
         maskWarLaser = cv2.inRange(hsvWar, laserLower, laserUpper) # Ảnh này show ra laser nếu có
         warpedLaser = np.zeros_like(original_image)  # Extract out the object and place into output image
@@ -122,11 +122,11 @@ def detect_white_frame(original_image):
         # maskWarLaser = cv2.dilate(maskWarLaser, None, iterations=1)  # Đang là ảnh Gray với 2 mức xám 0 và 255
 
         # [DEBUG MODE]
-        # cv2.imshow('Color laser', origLaser)
-        # cv2.imshow('Mask laser', maskWarLaser)
-        #
-        # cv2.imshow('Original image', original_image)
-        # cv2.imshow('Warped blue image', origBlue)
+        cv2.imshow('Color laser', origLaser)
+        cv2.imshow('Mask laser', maskWarLaser)
+
+        cv2.imshow('Original image', original_image)
+        cv2.imshow('Warped blue image', origBlue)
 
         # calculate moments of binary image
         M = cv2.moments(maskWarLaser)
@@ -142,8 +142,8 @@ def detect_white_frame(original_image):
         warpedBlue = cv2.medianBlur(origBlue, 5)
         grayImage = cv2.cvtColor(warpedBlue, cv2.COLOR_BGR2GRAY)
 
-        # valueThreshold, binaryImage = cv2.threshold(grayImage, 125, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        valueThreshold, binaryImage = cv2.threshold(grayImage, 100, 255, cv2.ADAPTIVE_THRESH_MEAN_C)
+        valueThreshold, binaryImage = cv2.threshold(grayImage, 125, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        # valueThreshold, binaryImage = cv2.threshold(grayImage, 125, 255, cv2.ADAPTIVE_THRESH_MEAN_C)
 
         # [DEBUG MODE]
         # cv2.imshow('Original image', binaryImage)
@@ -254,7 +254,7 @@ def detect_grid_coodinate(warped_image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     # threshold
-    th, threshed = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
+    th, threshed = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
     # cv2.imshow("thresh", threshed)
     # cv2.waitKey(0)
     # findcontours
@@ -313,13 +313,13 @@ def detect_grid_coodinate(warped_image):
 
         if (len(coor_x) == 0):
             x2 = x1
-            y2 = line2[0][1] if (y1 < 50) else line1[0][1]
+            y2 = 150 if (y1 < 50) else 10
         else:
             coor_temp = abs(coor_x - np.ones(np.size(coor_x)) * x1)
             min_temp = min(coor_temp)
             if (min_temp > 10):
                 x2 = x1
-                y2 = line2[0][1] if (y1 < 50) else line1[0][1]
+                y2 = 150 if (y1 < 50) else 10
             else:
                 for j in range(len(coor_temp)):
                     if coor_temp[j] == min_temp:

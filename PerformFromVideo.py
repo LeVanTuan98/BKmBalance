@@ -8,7 +8,7 @@ real_coor = []
 
 final_width = 680
 final_height = 249
-direction = 'day29-09/2Y'
+direction = 'day08-10/2Y'
 
 if not os.path.exists('Input_Images/' + direction):
     os.makedirs('Input_Images/' + direction)
